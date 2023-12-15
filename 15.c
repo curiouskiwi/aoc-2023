@@ -1,13 +1,14 @@
 // Advent of Code 2023: Day 15 Lens Library
 // @curiouskiwi 15 Dec 2023
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-typedef struct lens {
+typedef struct lens
+{
     char label[10];
     int focal;
     bool skip;
@@ -16,13 +17,14 @@ typedef struct lens {
 
 lens *boxes[256];
 
+// For part 1
 int part1hash;
 
-int hash(char *label);
+int calculate_total();
+lens *create_lens(char *x);
 lens *find_lens(char *label, lens *box);
 void handle_lens(lens *l);
-lens *create_lens(char *x);
-int calculate_total();
+int hash(char *label);
 int number_of_lenses(lens *box);
 
 int main(int argc, char *argv[])
@@ -50,16 +52,13 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-
 // create the lenses
 lens *create_lens(char *x)
 {
     part1hash += hash(x);
     lens *l = malloc(sizeof(lens));
     if (l == NULL)
-    {
         return NULL;
-    }
     char label[10];
     int focal = 0;
     bool skip = false;
@@ -77,7 +76,7 @@ lens *create_lens(char *x)
         else if (x[i] == '=')
         {
             label[i] = '\0';
-            focal = x[i+1] - '0';
+            focal = x[i + 1] - '0';
         }
     }
     strcpy(l->label, label);
@@ -85,7 +84,6 @@ lens *create_lens(char *x)
     l->skip = skip;
     return l;
 }
-
 
 // hash the label
 int hash(char *label)
@@ -98,20 +96,18 @@ int hash(char *label)
     return h * 17 % 256;
 }
 
-
-// insert the box into the hash table
+// deal with each lens
 void handle_lens(lens *l)
 {
     lens *box = boxes[hash(l->label)];
     lens *temp = find_lens(l->label, box);
-    // if focal > 0, if the lens is in the hash table, update the focal length
+    // if the lens is in a box, either skip or update the focal length
     if (temp)
     {
-        if (l->skip) // remove the lens from the box
+        if (l->skip)
         {
             temp->skip = true;
-        } 
-        // if the lens is in the box, update the focal length
+        }
         else
         {
             temp->focal = l->focal;
@@ -119,14 +115,13 @@ void handle_lens(lens *l)
     }
     // else if the lens is not in the box, add it to the box
     else if (l->skip == false)
-    { 
+    {
         int h = hash(l->label);
         l->next = boxes[h];
         boxes[h] = l;
     }
     return;
 }
-
 
 lens *find_lens(char *label, lens *box)
 {
@@ -141,7 +136,18 @@ lens *find_lens(char *label, lens *box)
     return NULL;
 }
 
+int number_of_lenses(lens *box)
+{
+    int counter = 0;
+    while (box)
+    {
+        counter += (box->skip == false) ? 1 : 0;
+        box = box->next;
+    }
+    return counter;
+}
 
+// lenses were top-inserted so use counter to "reverse" their positions in the equation
 int calculate_total()
 {
     int total = 0;
@@ -149,29 +155,18 @@ int calculate_total()
     {
         lens *box = boxes[i];
         int counter = number_of_lenses(box);
+        lens *temp = box;
         while (box)
         {
             if (box->skip == false)
             {
-                total += (i + 1)  * box->focal * counter--;
-            }   
+                total += (i + 1) * box->focal * counter--;
+            }
+            temp = box;
             box = box->next;
+            free(temp);
         }
     }
     return total;
 }
 
-
-int number_of_lenses(lens *box)
-{
-    int counter = 0;
-    while (box)
-    {
-        if (box->skip == false)
-        {
-            counter++;
-        }
-        box = box->next;
-    }
-    return counter;
-}
